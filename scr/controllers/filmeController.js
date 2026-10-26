@@ -1,43 +1,11 @@
-import { filmes } from "../data/filmeData.js";
-
-const listarFilmes = () => filmes;
-const buscarFilmePorId = (id) => filmes.find((filme) => filme.id === id);
-const buscarIndiceFilme = (id) => filmes.findIndex((filme) => filme.id === id);
-
-const criarFilme = ({ titulo, genero, ano }) => {
-  const novoFilme = {
-    id: filmes.length ? Math.max(...filmes.map((filme) => filme.id)) + 1 : 1,
-    titulo,
-    genero,
-    ano: Number(ano)
-  };
-
-  filmes.push(novoFilme);
-
-  return novoFilme;
-};
-
-const atualizarFilme = (filme, dados) => {
-  const camposPermitidos = ["titulo", "genero", "ano"];
-
-  camposPermitidos.forEach((campo) => {
-    if (dados[campo] !== undefined) {
-      filme[campo] = campo === "ano" ? Number(dados[campo]) : dados[campo];
-    }
-  });
-
-  return filme;
-};
-
-const substituirFilme = (filme, { titulo, genero, ano }) => {
-  filme.titulo = titulo;
-  filme.genero = genero;
-  filme.ano = Number(ano);
-
-  return filme;
-};
-
-const removerFilme = (indice) => filmes.splice(indice, 1)[0];
+import {
+  atualizarFilme,
+  buscarPorId,
+  criarFilme,
+  listarTodos,
+  removerFilme,
+  substituirFilme
+} from "../models/filmeModel.js";
 
 export const homeController = (req, res) => {
   res.json({
@@ -48,13 +16,14 @@ export const homeController = (req, res) => {
   });
 };
 
-export const listarFilmesController = (req, res) => {
-  res.json(listarFilmes());
+export const listarFilmesController = async (req, res) => {
+  const filmes = await listarTodos();
+  res.json(filmes);
 };
 
-export const buscarFilmePorIdController = (req, res) => {
+export const buscarFilmePorIdController = async (req, res) => {
   const id = Number(req.params.id);
-  const filme = buscarFilmePorId(id);
+  const filme = await buscarPorId(id);
 
   if (!filme) {
     return res.status(404).json({
@@ -65,7 +34,7 @@ export const buscarFilmePorIdController = (req, res) => {
   res.json(filme);
 };
 
-export const criarFilmeController = (req, res) => {
+export const criarFilmeController = async (req, res) => {
   const { titulo, genero, ano } = req.body;
 
   if (!titulo || !genero || !ano) {
@@ -74,7 +43,7 @@ export const criarFilmeController = (req, res) => {
     });
   }
 
-  const filmeCriado = criarFilme({ titulo, genero, ano });
+  const filmeCriado = await criarFilme({ titulo, genero, ano });
 
   res.status(201).json({
     mensagem: "Filme cadastrado com sucesso",
@@ -82,9 +51,9 @@ export const criarFilmeController = (req, res) => {
   });
 };
 
-export const atualizarFilmeController = (req, res) => {
+export const atualizarFilmeController = async (req, res) => {
   const id = Number(req.params.id);
-  const filme = buscarFilmePorId(id);
+  const filme = await buscarPorId(id);
 
   if (!filme) {
     return res.status(404).json({
@@ -92,7 +61,7 @@ export const atualizarFilmeController = (req, res) => {
     });
   }
 
-  const filmeAtualizado = atualizarFilme(filme, req.body);
+  const filmeAtualizado = await atualizarFilme(id, req.body);
 
   res.json({
     mensagem: "Filme atualizado com sucesso",
@@ -100,9 +69,9 @@ export const atualizarFilmeController = (req, res) => {
   });
 };
 
-export const substituirFilmeController = (req, res) => {
+export const substituirFilmeController = async (req, res) => {
   const id = Number(req.params.id);
-  const filme = buscarFilmePorId(id);
+  const filme = await buscarPorId(id);
 
   if (!filme) {
     return res.status(404).json({
@@ -118,7 +87,7 @@ export const substituirFilmeController = (req, res) => {
     });
   }
 
-  const filmeSubstituido = substituirFilme(filme, { titulo, genero, ano });
+  const filmeSubstituido = await substituirFilme(id, { titulo, genero, ano });
 
   res.json({
     mensagem: "Filme substituído com sucesso",
@@ -126,17 +95,17 @@ export const substituirFilmeController = (req, res) => {
   });
 };
 
-export const removerFilmeController = (req, res) => {
+export const removerFilmeController = async (req, res) => {
   const id = Number(req.params.id);
-  const indiceFilme = buscarIndiceFilme(id);
+  const filme = await buscarPorId(id);
 
-  if (indiceFilme === -1) {
+  if (!filme) {
     return res.status(404).json({
       message: "Filme não encontrado"
     });
   }
 
-  const filmeRemovido = removerFilme(indiceFilme);
+  const filmeRemovido = await removerFilme(id);
 
   res.json({
     mensagem: "Filme excluído com sucesso",
